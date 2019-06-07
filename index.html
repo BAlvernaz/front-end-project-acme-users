@@ -54,9 +54,18 @@
         );
       };
 
+      class Pager extends React.Component {
+
+        render() {
+          const {count} = this.props
+          return (
+            <h1>Total Users: {count}</h1>
+          )
+        }
+      }
+
       const UsersTable = (props) => {
         const users = props.users
-        console.log(users)
         return (
           <div id="tableContainer">
             <table>
@@ -90,19 +99,30 @@
         constructor() {
           super()
           this.state = {
-            users: []
+            users: [],
+            count: 0
+          }
+        }
+
+        async componentDidUpdate(prevProps) {
+          if(prevProps.match.params.userId !== this.props.match.params.userId) {
+            const idx = this.props.match.params.userId
+            const results = await axios.get(`https://acme-users-api-rev.herokuapp.com/api/users/${idx ? idx : ''}`)
+            const { users } = results.data
+            this.setState({ users })
           }
         }
         async componentDidMount() {
-
-          const results = await axios.get('https://acme-users-api-rev.herokuapp.com/api/users')
-          const {users} = results.data
-          this.setState({ users })
+          const idx = this.props.match.params.userId
+          const results = await axios.get(`https://acme-users-api-rev.herokuapp.com/api/users/${idx ? idx : ''}`)
+          const { users, count } = results.data
+          this.setState({ users, count })
         }
         render() {
-          const {users} = this.state
+          const {users, count} = this.state
          return (
            <div id="userContainer">
+            <Pager count={count}/>
             <UsersTable users={ users }/>
           </div>
            )
