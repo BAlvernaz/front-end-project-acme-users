@@ -1,30 +1,131 @@
 <html>
   <head>
-<style>
-</style>
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.js'></script>
+    <style>
+      .navBar {
+        display: flex;
+        justify-content: flex-start;
+      }
+      a {
+        margin-right: 20px;
+      }
+      #Home {
+        display: flex;
+        justify-content: center;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/react-router-dom/5.0.0/react-router-dom.js'></script>
+    <script
+      src="https://unpkg.com/react@16/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"
+      crossorigin
+    ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-router-dom/5.0.0/react-router-dom.js"></script>
   </head>
   <body>
-    <div id='root'></div>
-    <script type='text/babel'>
-     const { HashRouter, Link, Route } = ReactRouterDOM
+    <div id="root"></div>
+    <script type="text/babel">
+      const { HashRouter, Link, Route, NavLink } = ReactRouterDOM;
 
-     class App extends React.Component {
+      const Home = () => {
+        return (
+          <div id="home">
+            <h1>Home</h1>
+          </div>
+        );
+      };
 
-      render() {
+      const Navbar = () => {
         return (
           <div>
-            <h1>Acme Users</h1>
+            <div className="navBar">
+              <NavLink to="/" activeClassName="active">
+                Home
+              </NavLink>
+              <NavLink to="/users" activeClassName="active">
+                Users
+              </NavLink>
+            </div>
+            <hr />
+          </div>
+        );
+      };
+
+      const UsersTable = (props) => {
+        const users = props.users
+        console.log(users)
+        return (
+          <div id="tableContainer">
+            <table>
+                <tbody>
+              <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Title</th>
+              </tr>
+              {
+                users.map(user => {
+                  return (
+                    <tr key={user.id}>
+                  <td>{user.firstName}</td>
+                  <td>{user.lastName}</td>
+                  <td>{user.email}</td>
+                  <td>{user.title}</td>
+                </tr>
+                  )
+                })
+              }
+
+              </tbody>
+            </table>
           </div>
         )
       }
-     }
 
-      const root = document.querySelector('#root');
+      class Users extends  React.Component {
+        constructor() {
+          super()
+          this.state = {
+            users: []
+          }
+        }
+        async componentDidMount() {
+
+          const results = await axios.get('https://acme-users-api-rev.herokuapp.com/api/users')
+          const {users} = results.data
+          this.setState({ users })
+        }
+        render() {
+          const {users} = this.state
+         return (
+           <div id="userContainer">
+            <UsersTable users={ users }/>
+          </div>
+           )
+        }
+      }
+
+      class App extends React.Component {
+        render() {
+          return (
+            <HashRouter>
+              <div>
+                <h1>Acme Users</h1>
+                <Navbar />
+              </div>
+              <Route exact path="/" component={ Home } />
+              <Route exact path="/users/" component={ Users } />
+              <Route path="/users/:userId" component= {Users} />
+            </HashRouter>
+          );
+        }
+      }
+
+      const root = document.querySelector("#root");
       ReactDOM.render(<App />, root);
     </script>
   </body>
