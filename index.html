@@ -61,10 +61,9 @@
       };
 
       class Pager extends React.Component {
-
         render() {
-          const { count, nextBtn } = this.props;
-          const pageId = this.props.pageId + 1
+          const { count, nextBtn, prevBtn, firstBtn, lastBtn } = this.props;
+          const pageId = this.props.pageId + 1;
           const totalpages = Math.ceil(count / 50);
 
           return (
@@ -75,13 +74,11 @@
                 </p>
               </div>
               <div id="pageBtn">
-               <button>First</button>
-               <button>Previous</button>
-               <div>
-               {pageId}
-               </div>
-               <button onClick={()=> nextBtn(pageId)}>Next</button>
-               <button>Last</button>
+                <button onClick={firstBtn}>First </button>
+                <button onClick={prevBtn}>Previous</button>
+                <div>{pageId}</div>
+                <button onClick={nextBtn}>Next</button>
+                <button onClick={() =>lastBtn(totalpages - 1)}>Last </button>
               </div>
             </div>
           );
@@ -123,7 +120,10 @@
             users: [],
             count: 0
           };
-          this.nextBtn = this.nextBtn.bind(this)
+          this.nextBtn = this.nextBtn.bind(this);
+          this.prevBtn = this.prevBtn.bind(this);
+          this.firstBtn = this.firstBtn.bind(this);
+          this.lastBtn = this.lastBtn.bind(this);
         }
 
         async componentDidUpdate(prevProps) {
@@ -140,7 +140,6 @@
             const { users } = results.data;
             this.setState({ users });
           }
-
         }
         async componentDidMount() {
           const idx = this.props.match.params.pageId;
@@ -154,20 +153,42 @@
         }
 
         nextBtn() {
-          const { pageId } = this.props.match.params
-          window.location.hash = `/users/${pageId  * 1 + 1}`
+          const { pageId } = this.props.match.params;
+          window.location.hash = `/users/${pageId ? pageId * 1 + 1 : 1}`;
+        }
+
+        prevBtn() {
+          const { pageId } = this.props.match.params;
+          window.location.hash = `/users/${pageId ? pageId * 1 - 1 : 1}`;
+        }
+
+        firstBtn() {
+          const { pageId } = this.props.match.params;
+          window.location.hash = `/users/`;
+        }
+
+        lastBtn(lastPage) {
+          const { pageId } = this.props.match.params;
+          window.location.hash = `/users/${lastPage}`;
         }
 
         render() {
           const { users, count } = this.state;
-          const { nextBtn } = this
+          const { nextBtn, prevBtn, firstBtn, lastBtn } = this;
           const pageId = this.props.match.params.pageId
             ? this.props.match.params.pageId * 1
             : 0;
 
           return (
             <div id="userContainer">
-              <Pager count={count} pageId={pageId} nextBtn={ nextBtn } />
+              <Pager
+                count={count}
+                pageId={pageId}
+                nextBtn={nextBtn}
+                prevBtn={prevBtn}
+                firstBtn={firstBtn}
+                lastBtn={lastBtn}
+              />
               <UsersTable users={users} />
             </div>
           );
