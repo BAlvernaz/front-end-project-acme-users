@@ -12,6 +12,12 @@
         display: flex;
         justify-content: center;
       }
+      .active {
+        background-color: dodgerblue;
+      }
+      #pageBtn {
+        display: flex;
+      }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
@@ -42,7 +48,7 @@
         return (
           <div>
             <div className="navBar">
-              <NavLink to="/" activeClassName="active">
+              <NavLink to="/" exact activeClassName="active">
                 Home
               </NavLink>
               <NavLink to="/users" activeClassName="active">
@@ -57,75 +63,114 @@
       class Pager extends React.Component {
 
         render() {
-          const {count} = this.props
+          const { count, nextBtn } = this.props;
+          const pageId = this.props.pageId + 1
+          const totalpages = Math.ceil(count / 50);
+
           return (
-            <h1>Total Users: {count}</h1>
-          )
+            <div>
+              <div>
+                <p>
+                  {count} Reasults. Page {pageId} of {totalpages}
+                </p>
+              </div>
+              <div id="pageBtn">
+               <button>First</button>
+               <button>Previous</button>
+               <div>
+               {pageId}
+               </div>
+               <button onClick={()=> nextBtn(pageId)}>Next</button>
+               <button>Last</button>
+              </div>
+            </div>
+          );
         }
       }
 
-      const UsersTable = (props) => {
-        const users = props.users
+      const UsersTable = props => {
+        const users = props.users;
         return (
           <div id="tableContainer">
             <table>
-                <tbody>
-              <tr>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Email</th>
-                <th>Title</th>
-              </tr>
-              {
-                users.map(user => {
+              <tbody>
+                <tr>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Email</th>
+                  <th>Title</th>
+                </tr>
+                {users.map(user => {
                   return (
                     <tr key={user.id}>
-                  <td>{user.firstName}</td>
-                  <td>{user.lastName}</td>
-                  <td>{user.email}</td>
-                  <td>{user.title}</td>
-                </tr>
-                  )
-                })
-              }
-
+                      <td>{user.firstName}</td>
+                      <td>{user.lastName}</td>
+                      <td>{user.email}</td>
+                      <td>{user.title}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-        )
-      }
+        );
+      };
 
-      class Users extends  React.Component {
+      class Users extends React.Component {
         constructor() {
-          super()
+          super();
           this.state = {
             users: [],
             count: 0
-          }
+          };
+          this.nextBtn = this.nextBtn.bind(this)
         }
 
         async componentDidUpdate(prevProps) {
-          if(prevProps.match.params.userId !== this.props.match.params.userId) {
-            const idx = this.props.match.params.userId
-            const results = await axios.get(`https://acme-users-api-rev.herokuapp.com/api/users/${idx ? idx : ''}`)
-            const { users } = results.data
-            this.setState({ users })
+          if (
+            prevProps.match.params.pageId !== this.props.match.params.pageId
+          ) {
+            const idx = this.props.match.params.pageId;
+
+            const results = await axios.get(
+              `https://acme-users-api-rev.herokuapp.com/api/users/${
+                idx ? idx : ""
+              }`
+            );
+            const { users } = results.data;
+            this.setState({ users });
           }
+
         }
         async componentDidMount() {
-          const idx = this.props.match.params.userId
-          const results = await axios.get(`https://acme-users-api-rev.herokuapp.com/api/users/${idx ? idx : ''}`)
-          const { users, count } = results.data
-          this.setState({ users, count })
+          const idx = this.props.match.params.pageId;
+          const results = await axios.get(
+            `https://acme-users-api-rev.herokuapp.com/api/users/${
+              idx ? idx : ""
+            }`
+          );
+          const { users, count } = results.data;
+          this.setState({ users, count });
         }
+
+        nextBtn() {
+          const { pageId } = this.props.match.params
+          window.location.hash = `/users/${pageId  * 1 + 1}`
+        }
+
         render() {
-          const {users, count} = this.state
-         return (
-           <div id="userContainer">
-            <Pager count={count}/>
-            <UsersTable users={ users }/>
-          </div>
-           )
+          const { users, count } = this.state;
+          const { nextBtn } = this
+          const pageId = this.props.match.params.pageId
+            ? this.props.match.params.pageId * 1
+            : 0;
+
+          return (
+            <div id="userContainer">
+              <Pager count={count} pageId={pageId} nextBtn={ nextBtn } />
+              <UsersTable users={users} />
+            </div>
+          );
         }
       }
 
@@ -137,9 +182,9 @@
                 <h1>Acme Users</h1>
                 <Navbar />
               </div>
-              <Route exact path="/" component={ Home } />
-              <Route exact path="/users/" component={ Users } />
-              <Route path="/users/:userId" component= {Users} />
+              <Route exact path="/" component={Home} />
+              <Route exact path="/users/" component={Users} />
+              <Route path="/users/:pageId" component={Users} />
             </HashRouter>
           );
         }
