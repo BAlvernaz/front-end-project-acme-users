@@ -61,7 +61,7 @@
       };
 
       const SearchBar = props => {
-        const { onChange, handleSearch, search } = props;
+        const { onChange, handleSearch, search, onClear } = props;
 
         return (
           <form>
@@ -75,7 +75,7 @@
               />
             </label>
             <input type="submit" onClick={handleSearch} />
-            <button>Clear</button>
+            <button onClick={onClear}>Clear</button>
           </form>
         );
       };
@@ -88,6 +88,7 @@
           };
           this.onChange = this.onChange.bind(this);
           this.handleSearch = this.handleSearch.bind(this);
+          this.onClear = this.onClear.bind(this);
         }
 
         onChange(event) {
@@ -103,20 +104,28 @@
             const res = await axios.get(
               `https://acme-users-api-rev.herokuapp.com/api/users/${i}`
             );
-            const users = res.data.users.map(user => userArr.push(user))
+            const users = res.data.users.map(user => userArr.push(user));
           }
           const filtered = userArr.filter(
-              user =>
-                user.firstName.toLowerCase().indexOf(search.toLowerCase()) !==
-                -1
-            );
+            user =>
+              user.firstName.toLowerCase().indexOf(search.toLowerCase()) !==
+                -1 ||
+              user.lastName.toLowerCase().indexOf(search.toLowerCase()) !==
+                -1 ||
+              user.email.toLowerCase().indexOf(search.toLowerCase()) !== -1 ||
+              user.title.toLowerCase().indexOf(search.toLowerCase()) !== -1
+          );
 
           grabFiltered(filtered);
         }
 
+        onClear() {
+          this.setState({ search: "" });
+        }
+
         render() {
           const { search } = this.state;
-          const { onChange, handleSearch } = this;
+          const { onChange, handleSearch, onClear } = this;
           const {
             users,
             count,
@@ -129,7 +138,6 @@
           const totalpages = Math.ceil(count / 50);
           const upperEdge = pageId === totalpages ? true : false;
           const lowerEdge = !pageId || pageId === 1 ? true : false;
-          console.log(this.state);
           return (
             <div>
               <div>
@@ -153,6 +161,7 @@
                   search={search}
                   onChange={onChange}
                   handleSearch={handleSearch}
+                  onClear={onClear}
                 />
               </div>
             </div>
@@ -202,23 +211,8 @@
           this.grabFiltered = this.grabFiltered.bind(this);
         }
 
-        async componentDidUpdate(prevProps) {
-          if (
-            prevProps.match.params.pageId !== this.props.match.params.pageId
-          ) {
-            const idx = this.props.match.params.pageId;
-
-            const results = await axios.get(
-              `https://acme-users-api-rev.herokuapp.com/api/users/${
-                idx ? idx : ""
-              }`
-            );
-            const { users } = results.data;
-            this.setState({ users });
-          }
-        }
         async componentDidMount() {
-          const idx = this.props.match.params.pageId;
+          const idx = this.props.match.params.pageId || 0;
           const results = await axios.get(
             `https://acme-users-api-rev.herokuapp.com/api/users/${
               idx ? idx : ""
@@ -229,24 +223,40 @@
           this.setState({ users, count });
         }
 
+        async componentDidUpdate(prevProps) {
+          if (
+            prevProps.match.params.pageId !== this.props.match.params.pageId
+          ) {
+            const idx = this.props.match.params.pageId || 0;
+
+            const results = await axios.get(
+              `https://acme-users-api-rev.herokuapp.com/api/users/${
+                idx ? idx : ""
+              }`
+            );
+            const { users } = results.data;
+            this.setState({ users });
+          }
+        }
+
         nextBtn() {
           const { pageId } = this.props.match.params;
-          window.location.hash = `/users/${pageId ? pageId * 1 + 1 : 1}`;
+          this.props.history.push(`/users/${pageId ? pageId * 1 + 1 : 1}`);
         }
 
         prevBtn() {
           const { pageId } = this.props.match.params;
-          window.location.hash = `/users/${pageId ? pageId * 1 - 1 : 1}`;
+          this.props.history.push(`/users/${pageId ? pageId * 1 - 1 : 1}`);
         }
 
         firstBtn() {
           const { pageId } = this.props.match.params;
-          window.location.hash = `/users/`;
+          this.props.history.push(`/users/0`);
         }
 
         lastBtn(lastPage) {
           const { pageId } = this.props.match.params;
-          window.location.hash = `/users/${lastPage}`;
+          this.props.history.push(`/users/${lastPage}`);
         }
 
         grabFiltered(filtered) {
@@ -261,7 +271,6 @@
           const pageId = this.props.match.params.pageId
             ? this.props.match.params.pageId * 1
             : 0;
-
           return (
             <div id="userContainer">
               <Pager
