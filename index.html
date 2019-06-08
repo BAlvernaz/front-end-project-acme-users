@@ -60,12 +60,76 @@
         );
       };
 
+      const SearchBar = props => {
+        const { onChange, handleSearch, search } = props;
+
+        return (
+          <form>
+            <label htmlFor="search">
+              Search For:
+              <input
+                type="text"
+                name="search"
+                value={search}
+                onChange={onChange}
+              />
+            </label>
+            <input type="submit" onClick={handleSearch} />
+            <button>Clear</button>
+          </form>
+        );
+      };
+
       class Pager extends React.Component {
+        constructor() {
+          super();
+          this.state = {
+            search: ""
+          };
+          this.onChange = this.onChange.bind(this);
+          this.handleSearch = this.handleSearch.bind(this);
+        }
+
+        onChange(event) {
+          this.setState({ search: event.target.value });
+        }
+
+        async handleSearch(event) {
+          event.preventDefault();
+          const userArr = [];
+          const { search } = this.state;
+          const { grabFiltered } = this.props;
+          for (let i = 0; i < this.props.count / 50; i++) {
+            const res = await axios.get(
+              `https://acme-users-api-rev.herokuapp.com/api/users/${i}`
+            );
+            const users = res.data.users.map(user => userArr.push(user))
+          }
+          const filtered = userArr.filter(
+              user =>
+                user.firstName.toLowerCase().indexOf(search.toLowerCase()) !==
+                -1
+            );
+
+          grabFiltered(filtered);
+        }
+
         render() {
-          const { count, nextBtn, prevBtn, firstBtn, lastBtn } = this.props;
+          const { search } = this.state;
+          const { onChange, handleSearch } = this;
+          const {
+            users,
+            count,
+            nextBtn,
+            prevBtn,
+            firstBtn,
+            lastBtn
+          } = this.props;
           const pageId = this.props.pageId + 1;
           const totalpages = Math.ceil(count / 50);
-
+          const upperEdge = pageId === totalpages ? true : false;
+          const lowerEdge = !pageId || pageId === 1 ? true : false;
+          console.log(this.state);
           return (
             <div>
               <div>
@@ -75,10 +139,21 @@
               </div>
               <div id="pageBtn">
                 <button onClick={firstBtn}>First </button>
-                <button onClick={prevBtn}>Previous</button>
+                <button onClick={prevBtn} disabled={lowerEdge}>
+                  Previous
+                </button>
                 <div>{pageId}</div>
-                <button onClick={nextBtn}>Next</button>
-                <button onClick={() =>lastBtn(totalpages - 1)}>Last </button>
+                <button onClick={nextBtn} disabled={upperEdge}>
+                  Next
+                </button>
+                <button onClick={() => lastBtn(totalpages - 1)}>Last </button>
+              </div>
+              <div id="searchBar">
+                <SearchBar
+                  search={search}
+                  onChange={onChange}
+                  handleSearch={handleSearch}
+                />
               </div>
             </div>
           );
@@ -124,6 +199,7 @@
           this.prevBtn = this.prevBtn.bind(this);
           this.firstBtn = this.firstBtn.bind(this);
           this.lastBtn = this.lastBtn.bind(this);
+          this.grabFiltered = this.grabFiltered.bind(this);
         }
 
         async componentDidUpdate(prevProps) {
@@ -149,6 +225,7 @@
             }`
           );
           const { users, count } = results.data;
+
           this.setState({ users, count });
         }
 
@@ -172,9 +249,15 @@
           window.location.hash = `/users/${lastPage}`;
         }
 
+        grabFiltered(filtered) {
+          const { users } = this.state;
+          this.setState({ users: filtered, count: filtered.length });
+          console.log(this.state);
+        }
+
         render() {
           const { users, count } = this.state;
-          const { nextBtn, prevBtn, firstBtn, lastBtn } = this;
+          const { nextBtn, prevBtn, firstBtn, lastBtn, grabFiltered } = this;
           const pageId = this.props.match.params.pageId
             ? this.props.match.params.pageId * 1
             : 0;
@@ -182,12 +265,14 @@
           return (
             <div id="userContainer">
               <Pager
+                users={users}
                 count={count}
                 pageId={pageId}
                 nextBtn={nextBtn}
                 prevBtn={prevBtn}
                 firstBtn={firstBtn}
                 lastBtn={lastBtn}
+                grabFiltered={grabFiltered}
               />
               <UsersTable users={users} />
             </div>
